@@ -168,55 +168,74 @@ let (__do_rewrite :
                  if uu___2
                  then FStar_Tactics_Monad.ret tm
                  else
-                   (let typ = lcomp.FStar_TypeChecker_Common.res_typ in
-                    let uu___4 =
-                      FStar_Tactics_Monad.new_uvar "do_rewrite.rhs" env typ
-                        (rangeof g0) in
+                   (let uu___4 =
+                      let uu___5 =
+                        let uu___6 = FStar_Syntax_Util.type_u () in
+                        FStar_Pervasives_Native.fst uu___6 in
+                      FStar_Tactics_Monad.new_uvar "do_rewrite.eq_ty" env
+                        uu___5 (rangeof g0) in
                     FStar_Tactics_Monad.bind uu___4
                       (fun uu___5 ->
                          match uu___5 with
-                         | (ut, uvar_ut) ->
-                             FStar_Tactics_Monad.mlog
-                               (fun uu___6 ->
-                                  let uu___7 =
-                                    FStar_Syntax_Print.term_to_string tm in
-                                  let uu___8 =
-                                    FStar_Syntax_Print.term_to_string ut in
-                                  FStar_Compiler_Util.print2
-                                    "do_rewrite: making equality\n\t%s ==\n\t%s\n"
-                                    uu___7 uu___8)
-                               (fun uu___6 ->
-                                  let uu___7 =
-                                    let uu___8 =
-                                      let uu___9 =
-                                        env.FStar_TypeChecker_Env.universe_of
-                                          env typ in
-                                      FStar_Syntax_Util.mk_eq2 uu___9 typ tm
-                                        ut in
-                                    FStar_Tactics_Monad.add_irrelevant_goal
-                                      g0 "do_rewrite.eq" env uu___8 in
-                                  FStar_Tactics_Monad.bind uu___7
-                                    (fun uu___8 ->
-                                       let uu___9 =
-                                         FStar_Tactics_Basic.focus rewriter in
-                                       FStar_Tactics_Monad.bind uu___9
-                                         (fun uu___10 ->
-                                            let ut1 =
-                                              FStar_TypeChecker_Normalize.reduce_uvar_solutions
-                                                env ut in
-                                            FStar_Tactics_Monad.mlog
-                                              (fun uu___11 ->
-                                                 let uu___12 =
-                                                   FStar_Syntax_Print.term_to_string
-                                                     tm in
-                                                 let uu___13 =
-                                                   FStar_Syntax_Print.term_to_string
-                                                     ut1 in
-                                                 FStar_Compiler_Util.print2
-                                                   "rewrite_rec: succeeded rewriting\n\t%s to\n\t%s\n"
-                                                   uu___12 uu___13)
-                                              (fun uu___11 ->
-                                                 FStar_Tactics_Monad.ret ut1)))))))
+                         | (typ, uvar_typ) ->
+                             let uu___6 =
+                               FStar_Tactics_Monad.new_uvar "do_rewrite.rhs"
+                                 env typ (rangeof g0) in
+                             FStar_Tactics_Monad.bind uu___6
+                               (fun uu___7 ->
+                                  match uu___7 with
+                                  | (ut, uvar_ut) ->
+                                      FStar_Tactics_Monad.mlog
+                                        (fun uu___8 ->
+                                           let uu___9 =
+                                             FStar_Syntax_Print.term_to_string
+                                               tm in
+                                           let uu___10 =
+                                             FStar_Syntax_Print.term_to_string
+                                               ut in
+                                           FStar_Compiler_Util.print2
+                                             "do_rewrite: making equality\n\t%s ==\n\t%s\n"
+                                             uu___9 uu___10)
+                                        (fun uu___8 ->
+                                           let uu___9 =
+                                             let uu___10 =
+                                               let uu___11 =
+                                                 env.FStar_TypeChecker_Env.universe_of
+                                                   env typ in
+                                               FStar_Syntax_Util.mk_eq2
+                                                 uu___11 typ tm ut in
+                                             FStar_Tactics_Monad.add_irrelevant_goal
+                                               g0 "do_rewrite.eq" env uu___10 in
+                                           FStar_Tactics_Monad.bind uu___9
+                                             (fun uu___10 ->
+                                                let uu___11 =
+                                                  FStar_Tactics_Basic.focus
+                                                    rewriter in
+                                                FStar_Tactics_Monad.bind
+                                                  uu___11
+                                                  (fun uu___12 ->
+                                                     let ut1 =
+                                                       FStar_TypeChecker_Normalize.reduce_uvar_solutions
+                                                         env ut in
+                                                     let uu___13 =
+                                                       FStar_TypeChecker_Rel.subtype_nosmt_force
+                                                         env
+                                                         lcomp.FStar_TypeChecker_Common.res_typ
+                                                         typ in
+                                                     FStar_Tactics_Monad.mlog
+                                                       (fun uu___14 ->
+                                                          let uu___15 =
+                                                            FStar_Syntax_Print.term_to_string
+                                                              tm in
+                                                          let uu___16 =
+                                                            FStar_Syntax_Print.term_to_string
+                                                              ut1 in
+                                                          FStar_Compiler_Util.print2
+                                                            "rewrite_rec: succeeded rewriting\n\t%s to\n\t%s\n"
+                                                            uu___15 uu___16)
+                                                       (fun uu___14 ->
+                                                          FStar_Tactics_Monad.ret
+                                                            ut1))))))))
 let (do_rewrite :
   FStar_Tactics_Types.goal ->
     rewriter_ty ->
