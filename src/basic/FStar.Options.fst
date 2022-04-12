@@ -14,21 +14,20 @@
    limitations under the License.
 *)
 module FStar.Options
+open FStar
+open FStar.BaseTypes
 open FStar.Compiler
+open FStar.Compiler
+open FStar.Compiler.Effect
 open FStar.Compiler.List
+open FStar.Getopt
 open FStar.Pervasives
 open FStar.String
-open FStar.Compiler.Effect
-open FStar
-open FStar.Compiler
-open FStar.Compiler.Util
-open FStar.Getopt
-open FStar.BaseTypes
 open FStar.VConfig
 
 module Option = FStar.Compiler.Option
 module FC = FStar.Common
-module Util = FStar.Compiler.Util
+module FCU = FStar.Compiler.Util
 module List = FStar.Compiler.List
 
 let debug_embedding = mk_ref false
@@ -50,7 +49,7 @@ type option_val =
   | Unset
 
 (* A FLAG TO INDICATE THAT WE'RE RUNNING UNIT TESTS *)
-let __unit_tests__ = Util.mk_ref false
+let __unit_tests__ = FCU.mk_ref false
 let __unit_tests() = !__unit_tests__
 let __set_unit_tests () = __unit_tests__ := true
 let __clear_unit_tests () = __unit_tests__ := false
@@ -63,7 +62,7 @@ let as_int = function
   | _ -> failwith "Impos: expected Int"
 let as_string = function
   | String b -> b
-  | Path b -> FStar.Common.try_convert_file_name_to_mixed b
+  | Path b -> FC.try_convert_file_name_to_mixed b
   | _ -> failwith "Impos: expected String"
 let as_list' = function
   | List ts -> ts
@@ -77,8 +76,8 @@ let as_comma_string_list = function
   | List ls -> List.flatten <| List.map (fun l -> split (as_string l) ",") ls
   | _ -> failwith "Impos: expected String (comma list)"
 
-type optionstate = Util.smap option_val
-let copy_optionstate m = Util.smap_copy m
+type optionstate = FCU.smap option_val
+let copy_optionstate m = FCU.smap_copy m
 
 (* The option state is a stack of stacks. Why? First, we need to
  * support #push-options and #pop-options, which provide the user with
@@ -106,7 +105,7 @@ let copy_optionstate m = Util.smap_copy m
  * No stack should ever be empty! Any of these failwiths should never be
  * triggered externally. IOW, the API should protect this invariant.
  *)
-let fstar_options : ref (list (list optionstate)) = Util.mk_ref []
+let fstar_options : ref (list (list optionstate)) = FCU.mk_ref []
 
 let internal_peek () = List.hd (List.hd !fstar_options)
 let peek () = copy_optionstate (internal_peek())
@@ -136,18 +135,18 @@ let set o =
     | []::_ -> failwith "set on empty current option stack"
     | (_::tl)::os -> fstar_options := ((o::tl)::os)
 
-let snapshot () = Common.snapshot push fstar_options ()
-let rollback depth = Common.rollback pop fstar_options depth
+let snapshot () = FC.snapshot push fstar_options ()
+let rollback depth = FC.rollback pop fstar_options depth
 
 let set_option k v =
   let map = internal_peek() in
   if k = "report_assumes"
-  then match Util.smap_try_find map k with
+  then match FCU.smap_try_find map k with
        | Some (String "error") ->
          //It's already set to error; ignore any attempt to change it
          ()
-       | _ -> Util.smap_add map k v
-  else Util.smap_add map k v
+       | _ -> FCU.smap_add map k v
+  else FCU.smap_add map k v
 
 let set_option' (k,v) =  set_option k v
 let set_admit_smt_queries (b:bool) = set_option "admit_smt_queries" (Bool b)
@@ -283,18 +282,18 @@ let defaults =
 
 let init () =
    let o = internal_peek () in
-   Util.smap_clear o;
+   FCU.smap_clear o;
    defaults |> List.iter set_option'                          //initialize it with the default values
 
 let clear () =
-   let o = Util.smap_create 50 in
+   let o = FCU.smap_create 50 in
    fstar_options := [[o]];                               //clear and reset the options stack
    init()
 
 let _run = clear()
 
 let get_option s =
-  match Util.smap_try_find (internal_peek()) s with
+  match FCU.smap_try_find (internal_peek()) s with
   | None -> failwith ("Impossible: option " ^s^ " not found")
   | Some s -> s
 
@@ -332,7 +331,7 @@ let set_verification_options o =
     "z3seed";
     "trivial_pre_for_unannotated_effectful_fns";
   ] in
-  List.iter (fun k -> set_option k (Util.smap_try_find o k |> Util.must)) verifopts
+  List.iter (fun k -> set_option k (FCU.smap_try_find o k |> FCU.must)) verifopts
 
 let lookup_opt s c =
   c (get_option s)
@@ -467,7 +466,7 @@ let one_debug_level_geq l1 l2 = match l1 with
    | Medium -> (l2 = Low || l2 = Medium)
    | High -> (l2 = Low || l2 = Medium || l2 = High)
    | Extreme -> (l2 = Low || l2 = Medium || l2 = High || l2 = Extreme)
-let debug_level_geq l2 = get_debug_level() |> Util.for_some (fun l1 -> one_debug_level_geq (dlevel l1) l2)
+let debug_level_geq l2 = get_debug_level() |> FCU.for_some (fun l1 -> one_debug_level_geq (dlevel l1) l2)
 
 // Note: the "ulib/fstar" is for the case where package is installed in the
 // standard "unix" way (e.g. opam) and the lib directory is $PREFIX/lib/fstar
@@ -479,28 +478,28 @@ let universe_include_path_base_dirs =
 
 
 // See comment in the interface file
-let _version = Util.mk_ref ""
-let _platform = Util.mk_ref ""
-let _compiler = Util.mk_ref ""
-let _date = Util.mk_ref " not set"
-let _commit = Util.mk_ref ""
+let _version = FCU.mk_ref ""
+let _platform = FCU.mk_ref ""
+let _compiler = FCU.mk_ref ""
+let _date = FCU.mk_ref " not set"
+let _commit = FCU.mk_ref ""
 
 let display_version () =
-  Util.print_string (Util.format5 "F* %s\nplatform=%s\ncompiler=%s\ndate=%s\ncommit=%s\n"
+  FCU.print_string (FCU.format5 "F* %s\nplatform=%s\ncompiler=%s\ndate=%s\ncommit=%s\n"
                                   !_version !_platform !_compiler !_date !_commit)
 
 let display_usage_aux specs =
-  Util.print_string "fstar.exe [options] file[s] [@respfile...]\n";
-  Util.print_string (Util.format1 "  %srespfile  read options from respfile\n" (Util.colorize_bold "@"));
+  FCU.print_string "fstar.exe [options] file[s] [@respfile...]\n";
+  FCU.print_string (FCU.format1 "  %srespfile  read options from respfile\n" (FCU.colorize_bold "@"));
   List.iter
     (fun (_, flag, p, doc) ->
        match p with
          | ZeroArgs ig ->
-             if doc = "" then Util.print_string (Util.format1 "  --%s\n" (Util.colorize_bold flag))
-             else Util.print_string (Util.format2 "  --%s  %s\n" (Util.colorize_bold flag) doc)
+             if doc = "" then FCU.print_string (FCU.format1 "  --%s\n" (FCU.colorize_bold flag))
+             else FCU.print_string (FCU.format2 "  --%s  %s\n" (FCU.colorize_bold flag) doc)
          | OneArg (_, argname) ->
-             if doc = "" then Util.print_string (Util.format2 "  --%s %s\n" (Util.colorize_bold flag) (Util.colorize_bold argname))
-             else Util.print_string (Util.format3 "  --%s %s  %s\n" (Util.colorize_bold flag) (Util.colorize_bold argname) doc))
+             if doc = "" then FCU.print_string (FCU.format2 "  --%s %s\n" (FCU.colorize_bold flag) (FCU.colorize_bold argname))
+             else FCU.print_string (FCU.format3 "  --%s %s  %s\n" (FCU.colorize_bold flag) (FCU.colorize_bold argname) doc))
     specs
 
 let mk_spec o : opt =
@@ -517,11 +516,11 @@ let mk_spec o : opt =
     ns, name, arg, desc
 
 let accumulated_option name value =
-    let prev_values = Util.dflt [] (lookup_opt name (as_option as_list')) in
+    let prev_values = FCU.dflt [] (lookup_opt name (as_option as_list')) in
     List (value :: prev_values)
 
 let reverse_accumulated_option name value =
-    let prev_values = Util.dflt [] (lookup_opt name (as_option as_list')) in
+    let prev_values = FCU.dflt [] (lookup_opt name (as_option as_list')) in
     List (prev_values @ [value])
 
 let accumulate_string name post_processor value =
@@ -593,7 +592,7 @@ let rec parse_opt_val (opt_name: string) (typ: opt_type) (str_val: string) : opt
                                                 parse_opt_val opt_name elem_spec str_val
   with
   | InvalidArgument opt_name ->
-    failwith (Util.format1 "Invalid argument to --%s" opt_name)
+    failwith (FCU.format1 "Invalid argument to --%s" opt_name)
 
 let rec desc_of_opt_type typ : option string =
   let desc_of_enum cases =
@@ -1462,9 +1461,9 @@ let set_error_flags_callback_aux,
 let set_error_flags_callback = set_error_flags_callback_aux
 let display_usage () = display_usage_aux all_specs
 
-let fstar_bin_directory = Util.get_exec_dir ()
+let fstar_bin_directory = FCU.get_exec_dir ()
 
-let file_list_ : ref (list string) = Util.mk_ref []
+let file_list_ : ref (list string) = FCU.mk_ref []
 
 (* In `parse_filename_arg specs arg`:
 
@@ -1483,11 +1482,11 @@ let file_list_ : ref (list string) = Util.mk_ref []
 
 
 let rec parse_filename_arg specs enable_filenames arg =
-  if Util.starts_with arg "@"
+  if FCU.starts_with arg "@"
   then begin
     // read and parse a response file
-    let filename = Util.substring_from arg 1 in
-    let lines = Util.file_get_lines filename in
+    let filename = FCU.substring_from arg 1 in
+    let lines = FCU.file_get_lines filename in
     Getopt.parse_list specs (parse_filename_arg specs enable_filenames) lines
   end else begin
     if enable_filenames
@@ -1552,7 +1551,7 @@ let include_path () =
     cache_dir @ get_include()
   else
     let lib_paths =
-        match Util.expand_environment_variable "FSTAR_LIB" with
+        match FCU.expand_environment_variable "FSTAR_LIB" with
         | None ->
           let fstar_home = fstar_bin_directory ^ "/.."  in
           let defs = universe_include_path_base_dirs in
@@ -1562,25 +1561,25 @@ let include_path () =
     cache_dir @ lib_paths @ get_include() @ [ "." ]
 
 let find_file =
-  let file_map = Util.smap_create 100 in
+  let file_map = FCU.smap_create 100 in
   fun filename ->
-     match Util.smap_try_find file_map filename with
+     match FCU.smap_try_find file_map filename with
      | Some f -> f
      | None ->
        let result =
           (try
-              if Util.is_path_absolute filename then
-                if Util.file_exists filename then
+              if FCU.is_path_absolute filename then
+                if FCU.file_exists filename then
                   Some filename
                 else
                   None
               else
                 (* In reverse, because the last directory has the highest precedence. *)
-                Util.find_map (List.rev (include_path ())) (fun p ->
+                FCU.find_map (List.rev (include_path ())) (fun p ->
                   let path =
                     if p = "." then filename
-                    else Util.join_paths p filename in
-                  if Util.file_exists path then
+                    else FCU.join_paths p filename in
+                  if FCU.file_exists path then
                     Some path
                   else
                     None)
@@ -1588,7 +1587,7 @@ let find_file =
                   None)
        in
        if Option.isSome result
-       then Util.smap_add file_map filename result;
+       then FCU.smap_add file_map filename result;
        result
 
 let prims () =
@@ -1599,7 +1598,7 @@ let prims () =
       | Some result ->
         result
       | None ->
-        failwith (Util.format1 "unable to find required file \"%s\" in the module search path.\n" filename)
+        failwith (FCU.format1 "unable to find required file \"%s\" in the module search path.\n" filename)
     end
   | Some x -> x
 
@@ -1609,25 +1608,25 @@ let pervasives () =
   let filename = "FStar.Pervasives.fsti" in
   match find_file filename with
   | Some result -> result
-  | None        -> failwith (Util.format1 "unable to find required file \"%s\" in the module search path.\n" filename)
+  | None        -> failwith (FCU.format1 "unable to find required file \"%s\" in the module search path.\n" filename)
 
 let pervasives_basename () = basename (pervasives ())
 let pervasives_native_basename () =
   let filename = "FStar.Pervasives.Native.fst" in
   match find_file filename with
   | Some result -> basename result
-  | None        -> failwith (Util.format1 "unable to find required file \"%s\" in the module search path.\n" filename)
+  | None        -> failwith (FCU.format1 "unable to find required file \"%s\" in the module search path.\n" filename)
 
 
 let prepend_output_dir fname =
   match get_odir() with
   | None -> fname
-  | Some x -> Util.join_paths x fname
+  | Some x -> FCU.join_paths x fname
 
 let prepend_cache_dir fpath =
   match get_cache_dir() with
   | None -> fpath
-  | Some x -> Util.join_paths x (Util.basename fpath)
+  | Some x -> FCU.join_paths x (FCU.basename fpath)
 
 //Used to parse the options of
 //   --using_facts_from
@@ -1636,33 +1635,33 @@ let prepend_cache_dir fpath =
 let path_of_text text = String.split ['.'] text
 
 let parse_settings ns : list (list string * bool) =
-    let cache = Util.smap_create 31 in
+    let cache = FCU.smap_create 31 in
     let with_cache f s =
-      match Util.smap_try_find cache s with
+      match FCU.smap_try_find cache s with
       | Some s -> s
       | None ->
         let res = f s in
-        Util.smap_add cache s res;
+        FCU.smap_add cache s res;
         res
     in
     let parse_one_setting s =
         if s = "*" then ([], true)
         else if s = "-*" then ([], false)
-        else if Util.starts_with s "-"
-        then let path = path_of_text (Util.substring_from s 1) in
+        else if FCU.starts_with s "-"
+        then let path = path_of_text (FCU.substring_from s 1) in
              (path, false)
-        else let s = if Util.starts_with s "+"
-                     then Util.substring_from s 1
+        else let s = if FCU.starts_with s "+"
+                     then FCU.substring_from s 1
                      else s in
              (path_of_text s, true)
     in
     ns |> List.collect (fun s ->
-      let s = Util.trim_string s in
+      let s = FCU.trim_string s in
       if s = "" then []
       else with_cache (fun s ->
-             let s = Util.replace_char s ' ' ',' in
-             Util.splitlines s
-             |> List.concatMap (fun s -> Util.split s ",")
+             let s = FCU.replace_char s ' ' ',' in
+             FCU.splitlines s
+             |> List.concatMap (fun s -> FCU.split s ",")
              |> List.filter (fun s -> s <> "")
              |> List.map parse_one_setting) s)
              |> List.rev
@@ -1692,10 +1691,10 @@ let print_codegen =
   | Plugin -> "Plugin"
 
 let codegen                      () =
-    Util.map_opt (get_codegen())
+    FCU.map_opt (get_codegen())
                  (fun s -> parse_codegen s |> must)
 
-let codegen_libs                 () = get_codegen_lib () |> List.map (fun x -> Util.split x ".")
+let codegen_libs                 () = get_codegen_lib () |> List.map (fun x -> FCU.split x ".")
 let debug_any                    () = get_debug () <> []
 
 let debug_module        modul       = (get_debug () |> List.existsb (module_name_eq modul))
@@ -1727,10 +1726,10 @@ let hint_file_for_src src_filename =
         let file_name =
           match hint_dir () with
           | Some dir ->
-            Util.concat_dir_filename dir (Util.basename src_filename)
+            FCU.concat_dir_filename dir (FCU.basename src_filename)
           | _ -> src_filename
         in
-        Util.format1 "%s.hints" file_name
+        FCU.format1 "%s.hints" file_name
 let ide                          () = get_ide                         ()
 let ide_id_info_off              () = get_ide_id_info_off             ()
 let print                        () = get_print                       ()
@@ -1855,7 +1854,7 @@ let module_matches_namespace_filter m filter =
         | _ -> false
     in
     match setting
-          |> Util.try_find
+          |> FCU.try_find
               (fun (path, _) -> matches_path m_components path)
     with
     | None -> false
@@ -1872,10 +1871,10 @@ type parsed_extract_setting = {
 }
 
 let print_pes pes =
-  Util.format2 "{ target_specific_settings = %s;\n\t
+  FCU.format2 "{ target_specific_settings = %s;\n\t
                default_settings = %s }"
             (List.map (fun (tgt, s) ->
-                         Util.format2 "(%s, %s)"
+                         FCU.format2 "(%s, %s)"
                            (print_codegen tgt)
                            s)
                       pes.target_specific_settings
@@ -1886,13 +1885,13 @@ let print_pes pes =
 
 let find_setting_for_target tgt (s:list (codegen_t * string))
   : option string
-  = match Util.try_find (fun (x, _) -> x = tgt) s with
+  = match FCU.try_find (fun (x, _) -> x = tgt) s with
     | Some (_, s) -> Some s
     | _ -> None
 
 let extract_settings
   : unit -> option parsed_extract_setting
-  = let memo:ref (option parsed_extract_setting * bool) = Util.mk_ref (None, false) in
+  = let memo:ref (option parsed_extract_setting * bool) = FCU.mk_ref (None, false) in
     let merge_parsed_extract_settings p0 p1 : parsed_extract_setting =
       let merge_setting s0 s1 =
         match s0, s1 with
@@ -1919,7 +1918,7 @@ let extract_settings
       let result, set = !memo in
       let fail msg =
            display_usage();
-           failwith (Util.format1 "Could not parse '%s' passed to the --extract option" msg)
+           failwith (FCU.format1 "Could not parse '%s' passed to the --extract option" msg)
       in
       if set then result
       else match get_extract () with
@@ -1931,23 +1930,23 @@ let extract_settings
              let parse_one_setting extract_setting =
                // T1:setting1; T2:setting2; ... or
                // setting <-- applies to all other targets
-               let tgt_specific_settings = Util.split extract_setting ";" in
+               let tgt_specific_settings = FCU.split extract_setting ";" in
                let split_one t_setting =
-                   match Util.split t_setting ":" with
+                   match FCU.split t_setting ":" with
                    | [default_setting] ->
-                     Inr (Util.trim_string default_setting)
+                     Inr (FCU.trim_string default_setting)
                    | [target; setting] ->
-                     let target = Util.trim_string target in
+                     let target = FCU.trim_string target in
                      match parse_codegen target with
                      | None -> fail target
-                     | Some tgt -> Inl (tgt, Util.trim_string setting)
+                     | Some tgt -> Inl (tgt, FCU.trim_string setting)
                    | _ -> fail t_setting
                in
                let settings = List.map split_one tgt_specific_settings in
                let fail_duplicate msg tgt =
                    display_usage();
                    failwith
-                     (Util.format2
+                     (FCU.format2
                        "Could not parse '%s'; multiple setting for %s target"
                        msg tgt)
                in
@@ -1960,7 +1959,7 @@ let extract_settings
                          | None -> { out with default_settings = Some def }
                          | Some _ ->  fail_duplicate def "default")
                      | Inl (target, setting) ->
-                       (match Util.try_find (fun (x, _) -> x = target) out.target_specific_settings with
+                       (match FCU.try_find (fun (x, _) -> x = target) out.target_specific_settings with
                          | None -> { out with target_specific_settings = (target, setting):: out.target_specific_settings }
                          | Some _ -> fail_duplicate setting (print_codegen target)))
                    settings
@@ -2007,12 +2006,12 @@ let should_extract m tgt =
         let should_extract_namespace m =
             match get_extract_namespace () with
             | [] -> false
-            | ns -> ns |> Util.for_some (fun n -> Util.starts_with m (String.lowercase n))
+            | ns -> ns |> FCU.for_some (fun n -> FCU.starts_with m (String.lowercase n))
         in
         let should_extract_module m =
             match get_extract_module () with
             | [] -> false
-            | l -> l |> Util.for_some (fun n -> String.lowercase n = m)
+            | l -> l |> FCU.for_some (fun n -> String.lowercase n = m)
         in
         not (no_extract m) &&
         (match get_extract_namespace (), get_extract_module() with
@@ -2046,7 +2045,7 @@ let set_options s =
              then set_error_flags()
              else res
     with
-    | File_argument s -> Getopt.Error (Util.format1 "File %s is not a valid option" s)
+    | File_argument s -> Getopt.Error (FCU.format1 "File %s is not a valid option" s)
 
 
 let get_vconfig () =

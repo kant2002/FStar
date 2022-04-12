@@ -1,0 +1,24 @@
+The cycle contains a subset of the modules in:
+/home/kant/FStar/ulib/FStar.Set.fst
+`used by` /home/kant/FStar/ulib/FStar.Util.fst
+`used by` /home/kant/FStar/src/basic/FStar.Options.fst
+`used by` /home/kant/FStar/src/parser/FStar.Parser.Const.fst
+`used by` /home/kant/FStar/src/reflection/FStar.Reflection.Data.fst
+`used by` /home/kant/FStar/ulib/FStar.Tactics.Builtins.fsti
+`used by` /home/kant/FStar/ulib/FStar.FunctionalExtensionality.fst
+`used by` /home/kant/FStar/ulib/FStar.Set.fst
+`used by` /home/kant/FStar/ulib/FStar.ST.fst
+`used by` /home/kant/FStar/ulib/FStar.All.fst
+`used by` /home/kant/FStar/ulib/FStar.String.fsti
+`used by` /home/kant/FStar/src/basic/FStar.Compiler.Range.fst
+`used by` /home/kant/FStar/src/basic/FStar.Ident.fsti 
+A DOT-format graph has been dumped in the current directory as dep.graph
+With GraphViz installed, try: fdp -Tpng -odep.png dep.graph
+Hint: cat dep.graph | grep -v _ | grep -v prims
+
+[E] Failed to load deps. Error Recursive dependency on module /home/kant/FStar/ulib/FStar.Set.fst
+Content-Length: 146
+
+{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":"file:///home/kant/FStar/src/basic/FStar.Const.fst","diagnostics":[]}}Content-Length: 38
+
+{"id": 1, "jsonrpc": "2.0", "result": null}
