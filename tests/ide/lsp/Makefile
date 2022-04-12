@@ -3,6 +3,7 @@ include ../Makefile.common
 FSTAR:=${FSTAR_HOME}/bin/fstar.exe $(SMT) --lsp --warn_error -282 \
 	--include ${FSTAR_HOME} \
 	--include ${FSTAR_HOME}/src/basic \
+	--include ${FSTAR_HOME}/src/basic/boot \
 	--include ${FSTAR_HOME}/src/extraction \
 	--include ${FSTAR_HOME}/src/fstar \
 	--include ${FSTAR_HOME}/src/parser \
