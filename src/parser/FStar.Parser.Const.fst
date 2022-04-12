@@ -16,11 +16,9 @@
 module FStar.Parser.Const
 open FStar.String
 open FStar.Compiler.Effect
-open FStar.Compiler.Util
 open FStar.Ident
 open FStar.Compiler.Range
 open FStar.Const
-open FStar.Compiler.List
 module U = FStar.Compiler.Util
 module Options = FStar.Options
 module List = FStar.Compiler.List

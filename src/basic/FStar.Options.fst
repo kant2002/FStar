@@ -17,7 +17,6 @@ module FStar.Options
 open FStar
 open FStar.BaseTypes
 open FStar.Compiler
-open FStar.Compiler
 open FStar.Compiler.Effect
 open FStar.Compiler.List
 open FStar.Getopt
@@ -25,7 +24,7 @@ open FStar.Pervasives
 open FStar.String
 open FStar.VConfig
 
-module Option = FStar.Compiler.Option
+module FCO = FStar.Compiler.Option
 module FC = FStar.Common
 module FCU = FStar.Compiler.Util
 module List = FStar.Compiler.List
@@ -1586,7 +1585,7 @@ let find_file =
            with | _ -> //to deal with issues like passing bogus strings as paths like " input"
                   None)
        in
-       if Option.isSome result
+       if FCO.isSome result
        then FCU.smap_add file_map filename result;
        result
 
@@ -1805,7 +1804,7 @@ let using_facts_from             () =
     match get_using_facts_from () with
     | None -> [ [], true ] //if not set, then retain all facts
     | Some ns -> parse_settings ns
-let vcgen_optimize_bind_as_seq   () = Option.isSome (get_vcgen_optimize_bind_as_seq  ())
+let vcgen_optimize_bind_as_seq   () = FCO.isSome (get_vcgen_optimize_bind_as_seq  ())
 let vcgen_decorate_with_type     () = match get_vcgen_optimize_bind_as_seq  () with
                                       | Some "with_type" -> true
                                       | _ -> false
