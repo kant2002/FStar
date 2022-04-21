@@ -1,0 +1,9 @@
+Content-Length: 346
+
+{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file://./AlgebraTypes.fst","languageId":"fstar","version":6,"text":"module AlgebraTypes\r\n \r\ntype binary_relation (a: Type) = a -> a -> bool\r\n \r\n[@@\"opaque_to_smt\"]\r\nlet is_reflexive  (#a:Type) (r: binary_relation a) = forall (x:a).     x `r` x\r\n"}}}
+Content-Length: 154
+
+{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{"textDocument":{"uri":"file://./AlgebraTypes.fst"},"position":{"line":5,"character":38}}}
+Content-Length: 46
+
+{"jsonrpc":"2.0","method":"exit","params":{}}
